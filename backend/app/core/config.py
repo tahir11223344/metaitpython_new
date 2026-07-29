@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     # Keys: https://dash.cloudflare.com/?to=/:account/turnstile
     TURNSTILE_SECRET_KEY: str = ""
 
+    # Case study download leads kis email par jayein (khali = LEAD_NOTIFY_EMAIL)
+    CASE_STUDY_NOTIFY_EMAIL: str = ""
+
+    # Relative upload paths (/uploads/...) ko full URL banane ke liye. Backend
+    # ka apna public URL. Local par http://localhost:8000, prod me asli domain.
+    PUBLIC_BASE_URL: str = "http://localhost:8000"
+
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.FRONTEND_ORIGINS.split(",")]

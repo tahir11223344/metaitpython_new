@@ -1,0 +1,19 @@
+# D:\newmetait\backend me rakhein, naam: .dockerignore
+# Ye cheezein image me nahi jatin — chhoti aur mehfooz image banti hai.
+
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.env
+*.db
+*.sqlite3
+.git/
+.gitignore
+.pytest_cache/
+.mypy_cache/
+*.md
+# uploads image me na jayein — wo volume se aayengi
+uploads/

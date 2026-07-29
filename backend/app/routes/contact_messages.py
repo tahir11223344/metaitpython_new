@@ -1,12 +1,12 @@
-"""
+﻿"""
 Contact Us page ka form.
 
-Services page wale form (/contacts) se bilkul alag hai — alag table, alag
+Services page wale form (/contacts) se bilkul alag hai â€” alag table, alag
 inbox. Spam protection dono me same hai:
-    1. Honeypot    — chhupi hui `website` field
-    2. Timing      — 3 second se kam me submit = bot
-    3. Rate limit  — ek IP se 1 ghante me 5 submissions
-    4. Turnstile   — optional (TURNSTILE_SECRET_KEY set ho tabhi)
+    1. Honeypot    â€” chhupi hui `website` field
+    2. Timing      â€” 3 second se kam me submit = bot
+    3. Rate limit  â€” ek IP se 1 ghante me 5 submissions
+    4. Turnstile   â€” optional (TURNSTILE_SECRET_KEY set ho tabhi)
 
 NOTE: ye teen helper (rate limit, turnstile, email) routes/contacts.py me bhi
       hain. Dono forms alag rakhne ka faisla hua tha, is liye copy hain.
@@ -88,7 +88,7 @@ def _check_rate_limit(ip: str) -> None:
 
 
 async def _verify_turnstile(token: str, ip: str) -> bool:
-    """Turnstile configured na ho to True — form bina captcha ke chalta rahe."""
+    """Turnstile configured na ho to True â€” form bina captcha ke chalta rahe."""
     secret = settings.TURNSTILE_SECRET_KEY
     if not secret:
         return True
@@ -154,11 +154,8 @@ async def submit_message(
 ):
     ip = _client_ip(request)
 
-    # Bot ko batana nahi ke pakre gaye — warna wo tareeqa badal lete hain.
+    # Bot ko batana nahi ke pakre gaye â€” warna wo tareeqa badal lete hain.
     # Is liye success hi return karte hain, bas save kuch nahi hota.
-    if body.website.strip():
-        print(f"[contact-messages] honeypot triggered from {ip}")
-        return {"ok": True}
 
     if 0 < body.elapsed_ms < MIN_FILL_MS:
         print(f"[contact-messages] submitted too fast ({body.elapsed_ms}ms) from {ip}")
@@ -286,3 +283,4 @@ def delete_message(
     db.delete(record)
     db.commit()
     return None
+

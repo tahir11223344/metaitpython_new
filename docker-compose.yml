@@ -1,0 +1,99 @@
+# ==========================================================================
+# docker-compose.yml — D:\newmetait\ (project ki jar) me rakhein
+#
+# Teen service: db (PostgreSQL), backend (FastAPI), frontend (Next.js).
+# Ek command "docker compose up" teeno chala deti hai.
+#
+# Values .env file se aati hain (isi folder me, neeche .env.docker dekhein).
+# ==========================================================================
+
+services:
+  # ---------- Database ----------
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      # Database ka data yahan mehfooz — container delete ho to bhi data rahe
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      # backend tabhi start ho jab DB waqai tayyar ho
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------- Backend (FastAPI) ----------
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # DB ka host "db" hai — compose me service ka naam hi hostname banta hai,
+      # localhost NAHI (localhost to container khud hoga).
+      DATABASE_URL: postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+
+      SECRET_KEY: ${SECRET_KEY}
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS}
+      FRONTEND_URL: ${FRONTEND_URL}
+
+      # Email (SMTP)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL}
+
+      # Chatbot
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL}
+      GROQ_FREE_TIER: ${GROQ_FREE_TIER}
+      LEAD_NOTIFY_EMAIL: ${LEAD_NOTIFY_EMAIL}
+
+      # Contact forms + case studies
+      CONTACT_NOTIFY_EMAIL: ${CONTACT_NOTIFY_EMAIL}
+      CASE_STUDY_NOTIFY_EMAIL: ${CASE_STUDY_NOTIFY_EMAIL}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
+
+      # Uploads ke full URL banane ke liye — backend ka public URL
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+    volumes:
+      # Upload ki hui files yahan mehfooz rehti hain
+      - uploads_data:/app/uploads
+    ports:
+      - "8000:8000"
+
+  # ---------- Frontend (Next.js) ----------
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # NEXT_PUBLIC_* build ke waqt chahiye (browser me bake hote hain)
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      # Server-side (SSR) fetch container ke andar chalti hai — wahan backend
+      # ko "backend:8000" se reach karte hain, localhost se nahi.
+      INTERNAL_API_URL: http://backend:8000
+    extra_hosts:
+      # Container ke andar "localhost" ab host machine (aap ka Windows PC)
+      # ko point karega, container ko nahi. Backend host ke port 8000 par
+      # expose hai, isliye har lib/ API file jo NEXT_PUBLIC_API_URL
+      # (= http://localhost:8000) use karti hai, wo SSR ke andar se bhi
+      # sahi backend tak pohanch jayegi — kisi file ko chhedne ki zaroorat nahi.
+      - "localhost:host-gateway"
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
+  uploads_data:

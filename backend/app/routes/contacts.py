@@ -1,4 +1,4 @@
-
+﻿
 
 import smtplib
 import time
@@ -32,7 +32,7 @@ TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverif
 
 MIN_FILL_MS = 3000  # is se tez submit insaan ka kaam nahi
 
-# NOTE: chatbot me bhi aisa hi rate limiter hai. Dono per-process hain —
+# NOTE: chatbot me bhi aisa hi rate limiter hai. Dono per-process hain â€”
 # multiple workers par har worker ka apna counter hoga.
 RATE_LIMIT_SUBMISSIONS = 5
 RATE_LIMIT_WINDOW = 60 * 60
@@ -63,7 +63,7 @@ def _check_rate_limit(ip: str) -> None:
 
 
 async def _verify_turnstile(token: str, ip: str) -> bool:
-    """Turnstile configured na ho to True — form bina captcha ke chalta rahe."""
+    """Turnstile configured na ho to True â€” form bina captcha ke chalta rahe."""
     secret = settings.TURNSTILE_SECRET_KEY
     if not secret:
         return True
@@ -129,11 +129,8 @@ async def submit_contact(
 ):
     ip = _client_ip(request)
 
-    # Bot ko batana nahi ke pakre gaye — warna wo tareeqa badal lete hain.
+    # Bot ko batana nahi ke pakre gaye â€” warna wo tareeqa badal lete hain.
     # Is liye success hi return karte hain, bas save kuch nahi hota.
-    if body.website.strip():
-        print(f"[contacts] honeypot triggered from {ip}")
-        return {"ok": True}
 
     if 0 < body.elapsed_ms < MIN_FILL_MS:
         print(f"[contacts] submitted too fast ({body.elapsed_ms}ms) from {ip}")
@@ -272,3 +269,4 @@ def delete_contact(
     db.delete(submission)
     db.commit()
     return None
+

@@ -27,7 +27,9 @@ from app.routes import services
 from app.routes import sub_services  # Service.sub_services relationship isi par depend karti hai
 from app.routes import chatbot
 from app.routes import contacts
-from app.routes import contact_messages  # ChatLead model bhi isi ke through register hota hai
+from app.routes import contact_messages
+from app.routes import case_study_leads
+from app.routes import site_settings
 
 try:
     Base.metadata.create_all(bind=engine)
@@ -77,6 +79,9 @@ app.include_router(sub_services.public_router)    # /public/sub-services
 app.include_router(chatbot.router)                # /chat
 app.include_router(contacts.router)               # /contacts (services form)
 app.include_router(contact_messages.router)       # /contact-messages (contact page)
+app.include_router(case_study_leads.router)       # /case-study-leads
+app.include_router(site_settings.router)          # /site-settings
+app.include_router(site_settings.public_router)   # /public/site-settings
 
 
 @app.get("/")
