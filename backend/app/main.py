@@ -25,7 +25,7 @@ from app.routes.legal_pages import router as legal_page_router
 from app.routes.brands import router as brand_router
 from app.routes import services
 from app.routes import sub_services  # Service.sub_services relationship isi par depend karti hai
-from app.routes import chatbot
+# from app.routes import chatbot
 from app.routes import contacts
 from app.routes import contact_messages
 from app.routes import case_study_leads
@@ -76,7 +76,7 @@ app.include_router(services.router)               # /services
 app.include_router(services.public_router)        # /public/services
 app.include_router(sub_services.router)           # /sub-services
 app.include_router(sub_services.public_router)    # /public/sub-services
-app.include_router(chatbot.router)                # /chat
+# app.include_router(chatbot.router)              
 app.include_router(contacts.router)               # /contacts (services form)
 app.include_router(contact_messages.router)       # /contact-messages (contact page)
 app.include_router(case_study_leads.router)       # /case-study-leads
