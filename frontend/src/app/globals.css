@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@import "tailwindcss";
+
+/* Jab link ke andar bold ho ya bold ke andar link ho, dono surat mein blue color rahe */
+/* a strong,
+strong a,
+ * {
+  color: #2563eb !important;
+  text-decoration: none !important;
+} */
+/* a{
+  color: #2563eb !important;
+text-decoration: underline !important;
+  text-decoration-color: #2563eb !important;
+} */

@@ -1,0 +1,12 @@
+# D:\newmetait\frontend me rakhein, naam: .dockerignore
+
+node_modules/
+.next/
+out/
+.git/
+.gitignore
+.env*
+npm-debug.log*
+*.md
+.DS_Store
+.vscode/

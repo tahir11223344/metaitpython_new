@@ -1,0 +1,319 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { getServices } from "@/lib/serviceApi";
+import {
+  getSubServices,
+  deleteSubService,
+  mediaUrl,
+} from "@/lib/subServiceApi";
+
+const PER_PAGE = 20;
+
+function formatDate(iso) {
+  if (!iso) return "-";
+  try {
+    return new Date(iso).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return "-";
+  }
+}
+
+function Badge({ children, tone = "slate" }) {
+  const tones = {
+    green: "bg-green-100 text-green-700",
+    blue: "bg-blue-100 text-blue-700",
+    slate: "bg-slate-100 text-slate-600",
+  };
+  return (
+    <span
+      className={`rounded-full px-2.5 py-1 text-xs font-medium ${tones[tone]}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+export default function SubServicesListPage() {
+  const router = useRouter();
+
+  const [items, setItems] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [serviceId, setServiceId] = useState("");
+  const [activeFilter, setActiveFilter] = useState("");
+
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+
+  // Parent service filter ke liye
+  useEffect(() => {
+    getServices({ perPage: 100 })
+      .then((data) => setServices(data.items || []))
+      .catch(() => setServices([]));
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await getSubServices({
+        serviceId: serviceId || null,
+        search,
+        isActive: activeFilter === "" ? null : activeFilter === "true",
+        page,
+        perPage: PER_PAGE,
+      });
+      setItems(data.items || []);
+      setTotal(data.total || 0);
+    } catch (err) {
+      setError(err.message || "Couldn't load sub-services.");
+      setItems([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, serviceId, activeFilter, page]);
+
+  useEffect(() => {
+    const t = setTimeout(load, 300);
+    return () => clearTimeout(t);
+  }, [load]);
+
+  async function handleDelete(sub) {
+    const ok = window.confirm(`Delete "${sub.title}"? This can't be undone.`);
+    if (!ok) return;
+
+    setDeletingId(sub.id);
+    try {
+      await deleteSubService(sub.id);
+      if (items.length === 1 && page > 1) setPage((p) => p - 1);
+      else load();
+    } catch (err) {
+      setError(err.message || "Couldn't delete this sub-service.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  const lastPage = Math.max(1, Math.ceil(total / PER_PAGE));
+  const filtered = search || serviceId || activeFilter;
+
+  return (
+    <div className="mx-auto max-w-6xl">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
+          <h2 className="text-lg font-bold text-slate-900">
+            Sub Services{" "}
+            {!loading && (
+              <span className="text-sm font-normal text-slate-500">
+                ({total})
+              </span>
+            )}
+          </h2>
+          <Link
+            href="/dashboard/sub-services/new"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Create Sub Service
+          </Link>
+        </div>
+
+        <div className="flex flex-wrap gap-3 border-b border-slate-200 bg-slate-50 px-6 py-3">
+          <input
+            type="search"
+            placeholder="Search title or slug…"
+            value={search}
+            onChange={(e) => {
+              setPage(1);
+              setSearch(e.target.value);
+            }}
+            className="w-full max-w-xs rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+          <select
+            value={serviceId}
+            onChange={(e) => {
+              setPage(1);
+              setServiceId(e.target.value);
+            }}
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="">All services</option>
+            {services.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.title}
+              </option>
+            ))}
+          </select>
+          <select
+            value={activeFilter}
+            onChange={(e) => {
+              setPage(1);
+              setActiveFilter(e.target.value);
+            }}
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="">All</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+        </div>
+
+        {error && (
+          <div className="border-b border-rose-200 bg-rose-50 px-6 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-6 py-3 font-semibold">Sub Service</th>
+                <th className="px-6 py-3 font-semibold">Service</th>
+                <th className="px-6 py-3 font-semibold">Visibility</th>
+                <th className="px-6 py-3 font-semibold">Updated</th>
+                <th className="px-6 py-3 text-right font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-12 text-center text-slate-500"
+                  >
+                    Loading…
+                  </td>
+                </tr>
+              )}
+
+              {!loading && items.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center">
+                    <p className="text-slate-600">
+                      {filtered
+                        ? "No sub-services match your search."
+                        : "No sub-services yet."}
+                    </p>
+                    {!filtered && (
+                      <Link
+                        href="/dashboard/sub-services/new"
+                        className="mt-3 inline-block text-sm font-semibold text-blue-600 hover:underline"
+                      >
+                        Create your first sub-service
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              )}
+
+              {!loading &&
+                items.map((sub) => (
+                  <tr key={sub.id} className="transition hover:bg-slate-50">
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-3">
+                        {sub.icon ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={mediaUrl(sub.icon)}
+                            alt=""
+                            className="h-9 w-9 rounded border border-slate-200 object-contain"
+                          />
+                        ) : (
+                          <div className="h-9 w-9 rounded border border-dashed border-slate-300" />
+                        )}
+                        <div>
+                          <p className="font-medium text-slate-900">
+                            {sub.title}
+                          </p>
+                          <p className="text-xs text-slate-500">{sub.slug}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-3 text-slate-600">
+                      {sub.service_title || "-"}
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge tone={sub.is_active ? "green" : "slate"}>
+                          {sub.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                        {sub.show_on_services_page && (
+                          <Badge tone="blue">Services page</Badge>
+                        )}
+                        {sub.show_on_landing_page && (
+                          <Badge tone="blue">Landing page</Badge>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-3 text-slate-500">
+                      {formatDate(sub.updated_at)}
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/sub-services/${sub.id}/edit`,
+                            )
+                          }
+                          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(sub)}
+                          disabled={deletingId === sub.id}
+                          className="rounded-md bg-rose-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-rose-600 disabled:opacity-50"
+                        >
+                          {deletingId === sub.id ? "…" : "Delete"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+
+        {lastPage > 1 && (
+          <div className="flex items-center justify-between border-t border-slate-200 px-6 py-3">
+            <span className="text-sm text-slate-500">
+              Page {page} of {lastPage}
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm transition hover:bg-slate-100 disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
+                disabled={page >= lastPage}
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm transition hover:bg-slate-100 disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
